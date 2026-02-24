@@ -21,12 +21,12 @@ jobs:
       with:
         php-version: '8.1'  # Match your Drupal PHP version
 
-    - name: Install dependencies
+    - name: Install Composer dependencies
       run: |
         composer install --no-interaction --prefer-dist
 
     - name: Run PHP lint
-      run: find . -type f -name "*.php" -exec php -l {} \;
+      run: find . -type f -name "*.php" -path ./vendor -prune -o -exec php -l {} \;
 
     - name: Run tests
       run: |
@@ -34,8 +34,8 @@ jobs:
         echo "No tests defined yet"
 
     - name: Archive application
-      run: zip -r drupal.zip . -x "*.git*"
-    
+      run: zip -r drupal.zip . -x "*.git*" "vendor/*" "node_modules/*"
+      
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
