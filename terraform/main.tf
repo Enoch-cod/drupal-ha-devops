@@ -18,7 +18,7 @@ resource "aws_subnet" "subnet_a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
   availability_zone       = "eu-north-1a"
-  map_public_ip_on_launch = true   # 👈 ADD THIS
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "drupal-subnet-a"
@@ -29,7 +29,7 @@ resource "aws_subnet" "subnet_b" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.2.0/24"
   availability_zone       = "eu-north-1b"
-  map_public_ip_on_launch = true   # 👈 ADD THIS
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "drupal-subnet-b"
@@ -81,7 +81,6 @@ resource "aws_security_group" "web_sg" {
   description = "Allow HTTP and SSH"
   vpc_id      = aws_vpc.main.id
 
-  # SSH
   ingress {
     from_port   = 22
     to_port     = 22
@@ -89,7 +88,6 @@ resource "aws_security_group" "web_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # HTTP
   ingress {
     from_port   = 80
     to_port     = 80
@@ -97,7 +95,6 @@ resource "aws_security_group" "web_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Outbound
   egress {
     from_port   = 0
     to_port     = 0
@@ -111,6 +108,39 @@ resource "aws_security_group" "web_sg" {
 }
 
 # =========================
+# IAM Role for EC2 (CodeDeploy)
+# =========================
+resource "aws_iam_role" "ec2_codedeploy_role" {
+  name = "ec2-codedeploy-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_codedeploy_attach" {
+  role       = aws_iam_role.ec2_codedeploy_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy"
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_s3_attach" {
+  role       = aws_iam_role.ec2_codedeploy_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2-codedeploy-profile"
+  role = aws_iam_role.ec2_codedeploy_role.name
+}
+
+# =========================
 # EC2 Instances
 # =========================
 resource "aws_instance" "web1" {
@@ -119,6 +149,7 @@ resource "aws_instance" "web1" {
   key_name               = var.key_name
   subnet_id              = aws_subnet.subnet_a.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
     Name = "web1"
@@ -131,6 +162,7 @@ resource "aws_instance" "web2" {
   key_name               = var.key_name
   subnet_id              = aws_subnet.subnet_b.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
     Name = "web2"
