@@ -19,7 +19,7 @@ jobs:
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.1'  # Match your Drupal PHP version
+        php-version: '8.1'
 
     - name: Install Composer dependencies
       run: |
@@ -30,12 +30,11 @@ jobs:
 
     - name: Run tests
       run: |
-        # Add your unit/integration tests here if any
         echo "No tests defined yet"
 
     - name: Archive application
       run: zip -r drupal.zip . -x "*.git*" "vendor/*" "node_modules/*"
-      
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:

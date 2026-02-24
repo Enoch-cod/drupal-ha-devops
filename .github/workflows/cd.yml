@@ -12,11 +12,14 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
+    - name: Download artifact from CI workflow
+      uses: marvinpinto/action-download-artifact@v1.2.0
       with:
-        name: drupal-package
-        path: .
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: "Drupal CI"
+        workflow_conclusion: "success"
+        name: "drupal-package"
+        path: "."
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
