@@ -1,0 +1,14 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Ansible
+*.retry
+
+# Drupal
+sites/default/files/
+
+# OS
+.DS_Store

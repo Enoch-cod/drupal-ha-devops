@@ -1,0 +1,59 @@
+---
+- name: Install and Configure Drupal
+  hosts: web
+  become: yes
+
+  tasks:
+
+    - name: Install required packages
+      apt:
+        name:
+          - apache2
+          - mysql-client
+          - php
+          - php-mysql
+          - php-gd
+          - php-xml
+          - php-mbstring
+          - php-curl
+          - unzip
+          - wget
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Apache
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Remove default Apache index.html
+      file:
+        path: /var/www/html/index.html
+        state: absent
+
+    - name: Download Drupal
+      get_url:
+        url: https://www.drupal.org/download-latest/tar.gz
+        dest: /tmp/drupal.tar.gz
+
+    - name: Extract Drupal
+      unarchive:
+        src: /tmp/drupal.tar.gz
+        dest: /var/www/html/
+        remote_src: yes
+
+    - name: Move Drupal files to web root
+      shell: |
+        mv /var/www/html/drupal-*/* /var/www/html/
+        rm -rf /var/www/html/drupal-*
+      args:
+        executable: /bin/bash
+
+    - name: Set correct permissions
+      file:
+        path: /var/www/html
+        state: directory
+        recurse: yes
+        owner: www-data
+        group: www-data
