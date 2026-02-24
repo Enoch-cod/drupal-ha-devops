@@ -1,0 +1,43 @@
+name: Drupal CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'  # Match your Drupal PHP version
+
+    - name: Install dependencies
+      run: |
+        composer install --no-interaction --prefer-dist
+
+    - name: Run PHP lint
+      run: find . -type f -name "*.php" -exec php -l {} \;
+
+    - name: Run tests
+      run: |
+        # Add your unit/integration tests here if any
+        echo "No tests defined yet"
+
+    - name: Archive application
+      run: zip -r drupal.zip . -x "*.git*"
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: drupal-package
+        path: drupal.zip

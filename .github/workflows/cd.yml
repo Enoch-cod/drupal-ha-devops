@@ -1,0 +1,38 @@
+name: Drupal CD
+
+on:
+  workflow_run:
+    workflows: ["Drupal CI"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: drupal-package
+        path: .
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-north-1
+
+    - name: Upload to S3
+      run: |
+        aws s3 cp drupal.zip s3://drupal-codedeploy-2026/drupal.zip
+
+    - name: Deploy with CodeDeploy
+      run: |
+        aws deploy create-deployment \
+          --application-name drupal-app \
+          --deployment-group-name drupal-deployment-group \
+          --s3-location bucket=drupal-codedeploy-2026,bundleType=zip,key=drupal.zip \
+          --region eu-north-1
