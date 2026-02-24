@@ -13,13 +13,25 @@ jobs:
 
     steps:
     - name: Download artifact from CI workflow
-      uses: marvinpinto/action-download-artifact@v1.2.0
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        workflow: "Drupal CI"
-        workflow_conclusion: "success"
-        name: "drupal-package"
-        path: "."
+      shell: bash
+      run: |
+        # Requires jq (available in Ubuntu runner)
+        ARTIFACTS_URL="${{ github.event.workflow_run.artifacts_url }}"
+        GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+        REPO="${{ github.repository }}"
+        # Get the artifact id for drupal-package
+        ARTIFACT_ID=$(curl -sSL -H "Authorization: Bearer $GH_TOKEN" "$ARTIFACTS_URL" | jq '.artifacts[] | select(.name=="drupal-package") | .id')
+        if [ -z "$ARTIFACT_ID" ]; then
+          echo "drupal-package artifact not found in triggered workflow. Exiting."
+          exit 1
+        fi
+        # Download the artifact .zip file
+        curl -sSL -H "Authorization: Bearer $GH_TOKEN" \
+          -o drupal-artifact.zip \
+          "https://api.github.com/repos/$REPO/actions/artifacts/$ARTIFACT_ID/zip"
+        unzip drupal-artifact.zip
+        rm drupal-artifact.zip
+        # Now you should have drupal.zip extracted
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
